@@ -1,6 +1,5 @@
 import streamlit as st
 import requests
-import yfinance as yf
 import pandas as pd
 import datetime
 import time
@@ -34,8 +33,8 @@ TICKERS = [
 
 LANG_TEXT = {
     "title": {
-        "en": "Magic Formula - B3 Ranked Analysis With Momentum",
-        "pt": "Fórmula Mágica - Análise ranqueada B3 com momentum"
+        "en": "Magic Formula - B3 Ranked Analysis",
+        "pt": "Fórmula Mágica - Análise Ranqueada B3"
     },
     "description": {
         "en": "Joel Greenblatt's Magic Formula is a systematic value investing strategy that helps investors find quality companies trading at attractive prices. It ranks stocks by Earnings Yield, which highlights undervalued opportunities, and Return on Capital, which measures how efficiently a company generates profits. Companies with higher Earnings Yield and higher Return on Capital are more likely to offer strong returns, as they combine attractive pricing with proven business performance.",
@@ -82,15 +81,14 @@ if 'dismissed_errors' not in st.session_state:
 
 @st.cache_data(ttl=3600)
 def get_usd_to_brl_rate():
+    url = f"https://eodhd.com/api/real-time/USDBRL.FOREX?api_token={API_TOKEN}&fmt=json"
     try:
-        ticker = yf.Ticker("USDBRL=X")
-        hist = ticker.history(period="1d")
-        if not hist.empty:
-            return hist['Close'].iloc[-1]
-        st.error("Could not fetch USD/BRL exchange rate.")
-        return None
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        return float(data["close"])
     except Exception as e:
-        st.error(f"yfinance error: {e}")
+        st.error(f"EODHD FX error: {str(e)}")
         return None
 
 def get_financial_data(ticker):
@@ -104,7 +102,6 @@ def get_financial_data(ticker):
         valuation = data.get('Valuation', {})
         if not income_stmt_q or not balance_sheet_q:
             return [], f"No quarterly data for {ticker}"
-
         results = []
         debug_msgs = []
         common_dates = sorted(set(income_stmt_q.keys()) & set(balance_sheet_q.keys()), reverse=True)
@@ -115,18 +112,13 @@ def get_financial_data(ticker):
             total_debt = balance_sheet_report.get('shortLongTermDebtTotal')
             total_equity = balance_sheet_report.get('totalStockholderEquity')
             enterprise_value = valuation.get('EnterpriseValue', 0)
-
             def to_float(x):
-                try:
-                    return float(x)
-                except (TypeError, ValueError):
-                    return None
-
+                try: return float(x)
+                except (TypeError, ValueError): return None
             ebit = to_float(ebit)
             total_debt = to_float(total_debt)
             total_equity = to_float(total_equity)
             enterprise_value = to_float(enterprise_value)
-
             missing = []
             if ebit is None:
                 missing.append("ebit")
@@ -134,11 +126,9 @@ def get_financial_data(ticker):
                 missing.append("debt+equity")
             if enterprise_value is None:
                 missing.append("enterprise_value")
-
             if missing:
                 debug_msgs.append(f"{ticker} {date}: missing fields - {', '.join(missing)}")
                 continue
-
             results.append({
                 "report_date": date,
                 "ebit_usd": ebit,
@@ -146,7 +136,6 @@ def get_financial_data(ticker):
                 "total_debt_brl": total_debt if total_debt is not None else 0,
                 "total_equity_brl": total_equity if total_equity is not None else 0,
             })
-
         if not results:
             return [], "; ".join(debug_msgs) if debug_msgs else "No valid quarterly data found"
         return results, None
@@ -187,7 +176,7 @@ def get_1m_momentum(df):
 def get_breakscore(df):
     if df is None or len(df) < 127:
         return 0
-    last_126 = df['close'].iloc[-126:-1]  # last 6 months, excluding today
+    last_126 = df['close'].iloc[-126:-1]
     today_close = df['close'].iloc[-1]
     return int(today_close > last_126.max())
 
@@ -297,8 +286,6 @@ if st.button(LANG_TEXT["run_button"][lang]):
             st.session_state.results_df = None
             st.session_state.all_dates = []
             st.session_state.fetch_summary = LANG_TEXT["fetch_summary"][lang].format(ok=0, neg=0, fail=len(TICKERS))
-
-# --- Display Logic ---
 
 if st.session_state.results_df is not None and not st.session_state.results_df.empty:
     df = st.session_state.results_df.copy()
