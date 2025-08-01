@@ -33,8 +33,8 @@ TICKERS = [
 
 LANG_TEXT = {
     "title": {
-        "en": "Magic Formula - B3 Ranked Analysis",
-        "pt": "Fórmula Mágica - Análise Ranqueada B3"
+        "en": "Magic Formula - B3 Ranked Analysis with Momentum",
+        "pt": "Fórmula Mágica - Análise Ranqueada B3 com Momentum"
     },
     "description": {
         "en": "Joel Greenblatt's Magic Formula is a systematic value investing strategy that helps investors find quality companies trading at attractive prices. It ranks stocks by Earnings Yield, which highlights undervalued opportunities, and Return on Capital, which measures how efficiently a company generates profits. Companies with higher Earnings Yield and higher Return on Capital are more likely to offer strong returns, as they combine attractive pricing with proven business performance.",
