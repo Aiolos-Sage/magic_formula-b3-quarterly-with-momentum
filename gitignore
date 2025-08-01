@@ -1,0 +1,17 @@
+# Streamlit secrets and config
+.secrets.toml
+.streamlit/secrets.toml
+
+# Python bytecode and cache
+__pycache__/
+*.pyc
+
+# OS files
+.DS_Store
+
+# Data
+*.csv
+*.xlsx
+
+# Misc
+.env
